@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [brief, setBrief] = useState('');
+  const [humanBrief, setHumanBrief] = useState('');
   const [niche, setNiche] = useState('logo design');
   const [tone, setTone] = useState('friendly and professional');
   const [proposal, setProposal] = useState('');
@@ -32,7 +33,7 @@ export default function Home() {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief, niche, tone, mode })
+        body: JSON.stringify({ brief: mode === 'humanize' ? humanBrief : brief, niche, tone, mode })
       });
       const data = await res.json();
       if (data.error) {
@@ -67,7 +68,7 @@ export default function Home() {
     <div className="page">
       <nav className="nav">
         <div className="logo">
-          <img src="/logo1.png" alt="ProposalHero" style={{height: '40px', width: 'auto'}} />
+          <img src="/logo1.png" alt="ProposalHero" style={{ height: '40px', width: 'auto' }} />
         </div>
         <a href="https://proposalhero.lemonsqueezy.com/checkout/buy/f42e9931-e975-469b-822f-916086ddbafc?discount=0" target="_blank" className="upgrade-btn">Upgrade $9/mo</a>
       </nav>
@@ -84,13 +85,19 @@ export default function Home() {
           <div className="mode-tabs">
             <button
               className={`mode-tab ${mode === 'generate' ? 'active' : ''}`}
-              onClick={() => { setMode('generate'); setProposal(''); }}
+              onClick={() => { setMode('humanize'); setProposal(''); setError(''); }}
+            >
+              ⚡ Generate Proposal
+            </button>
+            <button
+              className={`mode-tab ${mode === 'generate' ? 'active' : ''}`}
+              onClick={() => { setMode('generate'); setProposal(''); setBrief(''); setError(''); }}
             >
               ⚡ Generate Proposal
             </button>
             <button
               className={`mode-tab ${mode === 'humanize' ? 'active' : ''}`}
-              onClick={() => { setMode('humanize'); setProposal(''); }}
+              onClick={() => { setMode('humanize'); setProposal(''); setBrief(''); setError(''); }}
             >
               ✦ Humanize Proposal
             </button>
@@ -131,14 +138,14 @@ export default function Home() {
               : 'Paste Client Job Description'}
           </label>
           <textarea
-            value={brief}
-            onChange={e => setBrief(e.target.value)}
+            value={mode === 'humanize' ? humanBrief : brief}
+            onChange={e => mode === 'humanize' ? setHumanBrief(e.target.value) : setBrief(e.target.value)}
             placeholder={mode === 'humanize'
               ? 'Paste any AI-generated proposal here and we will make it sound human...'
               : 'Paste the Fiverr job here... even a few words works.'}
             rows={6}
           />
-          <div className="char-count">{brief.length} characters</div>
+          <div className="char-count">{mode === 'humanize' ? humanBrief.length : brief.length} characters</div>
 
           {error && <div className="error-box">{error}</div>}
 
@@ -155,20 +162,20 @@ export default function Home() {
                   <div className="score-card">
                     <div className="score-label">Human Score</div>
                     <div className="score-bar-wrap">
-                      <div className="score-bar" style={{width: `${humanScore}%`, background: '#22c55e'}}></div>
+                      <div className="score-bar" style={{ width: `${humanScore}%`, background: '#22c55e' }}></div>
                     </div>
-                    <div className="score-val" style={{color: '#22c55e'}}>{humanScore}/100</div>
+                    <div className="score-val" style={{ color: '#22c55e' }}>{humanScore}/100</div>
                   </div>
                   <div className="score-card">
                     <div className="score-label">Naturalness</div>
                     <div className="score-bar-wrap">
-                      <div className="score-bar" style={{width: `${naturalness}%`, background: '#3b82f6'}}></div>
+                      <div className="score-bar" style={{ width: `${naturalness}%`, background: '#3b82f6' }}></div>
                     </div>
-                    <div className="score-val" style={{color: '#3b82f6'}}>{naturalness}/100</div>
+                    <div className="score-val" style={{ color: '#3b82f6' }}>{naturalness}/100</div>
                   </div>
                   <div className="score-card">
                     <div className="score-label">AI Detection Risk</div>
-                    <div className="risk-badge" style={{background: getRiskColor(aiRisk) + '20', color: getRiskColor(aiRisk), border: `1px solid ${getRiskColor(aiRisk)}40`}}>
+                    <div className="risk-badge" style={{ background: getRiskColor(aiRisk) + '20', color: getRiskColor(aiRisk), border: `1px solid ${getRiskColor(aiRisk)}40` }}>
                       {aiRisk}
                     </div>
                   </div>
