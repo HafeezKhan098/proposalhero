@@ -49,8 +49,7 @@ export default function Home() {
     <div className="page">
       <nav className="nav">
         <div className="logo">
-          <div className="logo-icon">P</div>
-          <span className="logo-text">ProposalHero</span>
+          <img src="/logo1.png" alt="ProposalHero" style={{ height: '40px', width: 'auto' }} />
         </div>
         <span className="badge">Free Beta</span>
       </nav>
