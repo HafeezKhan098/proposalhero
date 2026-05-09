@@ -310,6 +310,86 @@ textarea::placeholder {
   color: #93c5fd;
 }
 
+.mode-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  background: #0a1628;
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.mode-tab {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  background: transparent;
+  color: #475569;
+  transition: all 0.2s;
+}
+
+.mode-tab.active {
+  background: #1e3a5f;
+  color: white;
+}
+
+.mode-tab:hover:not(.active) {
+  color: #94a3b8;
+}
+
+.scores {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.score-card {
+  background: #0a1628;
+  border: 1px solid #0f2a4a;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.score-label {
+  font-size: 11px;
+  color: #475569;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.score-bar-wrap {
+  background: #0f2044;
+  border-radius: 99px;
+  height: 6px;
+  margin-bottom: 6px;
+  overflow: hidden;
+}
+
+.score-bar {
+  height: 6px;
+  border-radius: 99px;
+  transition: width 1s ease;
+}
+
+.score-val {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.risk-badge {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 99px;
+  margin-top: 4px;
+}
+
 .output-text {
   background: #0a1628;
   border: 1px solid #0f2a4a;
