@@ -3,6 +3,9 @@ import { useState, useEffect } from 'react';
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
+  const [usageCount, setUsageCount] = useState(0);
+  const [showPaywall, setShowPaywall] = useState(false);
+  const FREE_LIMIT = 3;
   const [brief, setBrief] = useState('');
   const [humanBrief, setHumanBrief] = useState('');
   const [niche, setNiche] = useState('logo design');
@@ -16,12 +19,31 @@ export default function Home() {
   const [aiRisk, setAiRisk] = useState('');
   const [naturalness, setNaturalness] = useState(0);
 
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    setMounted(true);
+    const today = new Date().toDateString();
+    const stored = localStorage.getItem('ph_usage');
+    if (stored) {
+      const { date, count } = JSON.parse(stored);
+      if (date === today) {
+        setUsageCount(count);
+      } else {
+        localStorage.setItem('ph_usage', JSON.stringify({ date: today, count: 0 }));
+      }
+    }
+  }, []);
   if (!mounted) return null;
 
   const wordCount = proposal.trim() === '' ? 0 : proposal.trim().split(/\s+/).length;
   const currentBrief = mode === 'humanize' ? humanBrief : brief;
   const setCurrentBrief = mode === 'humanize' ? setHumanBrief : setBrief;
+  <div className="usage-bar">
+    <span className="usage-text">
+      {usageCount >= FREE_LIMIT
+        ? '🔒 Daily limit reached — upgrade for unlimited'
+        : `✦ ${FREE_LIMIT - usageCount} free proposal${FREE_LIMIT - usageCount === 1 ? '' : 's'} remaining today`}
+    </span>
+  </div>
 
   async function generate() {
     if (!currentBrief.trim()) return;
@@ -70,7 +92,7 @@ export default function Home() {
     <div className="page">
       <nav className="nav">
         <div className="logo">
-          <img src="/logo1.png" alt="ProposalHero" style={{height: '40px', width: 'auto'}} />
+          <img src="/logo1.png" alt="ProposalHero" style={{ height: '40px', width: 'auto' }} />
         </div>
         <a href="https://proposalhero.lemonsqueezy.com/checkout/buy/f42e9931-e975-469b-822f-916086ddbafc?discount=0" target="_blank" className="upgrade-btn">Upgrade $9/mo</a>
       </nav>
@@ -82,6 +104,22 @@ export default function Home() {
       </div>
 
       <div className="card-wrap">
+        {showPaywall && (
+          <div className="paywall-overlay">
+            <div className="paywall-card">
+              <div className="paywall-icon">🔒</div>
+              <h2 className="paywall-title">Free limit reached</h2>
+              <p className="paywall-desc">You have used your 3 free proposals today. Upgrade to get unlimited proposals every day.</p>
+              <div className="paywall-features">
+                <div className="paywall-feature">✓ Unlimited proposals</div>
+                <div className="paywall-feature">✓ Humanize mode</div>
+                <div className="paywall-feature">✓ All future features</div>
+              </div>
+              <a href="https://proposalhero.lemonsqueezy.com/checkout/buy/f42e9931-e975-469b-822f-916086ddbafc?discount=0" target="_blank" className="paywall-btn">Upgrade for $9/month</a>
+              <button className="paywall-close" onClick={() => setShowPaywall(false)}>Maybe later</button>
+            </div>
+          </div>
+        )}
         <div className="card">
 
           <div className="mode-tabs">
@@ -162,16 +200,16 @@ export default function Home() {
                   <div className="score-card">
                     <div className="score-label">Human Score</div>
                     <div className="score-bar-wrap">
-                      <div className="score-bar" style={{width: `${humanScore}%`, background: '#22c55e'}}></div>
+                      <div className="score-bar" style={{ width: `${humanScore}%`, background: '#22c55e' }}></div>
                     </div>
-                    <div className="score-val" style={{color: '#22c55e'}}>{humanScore}/100</div>
+                    <div className="score-val" style={{ color: '#22c55e' }}>{humanScore}/100</div>
                   </div>
                   <div className="score-card">
                     <div className="score-label">Naturalness</div>
                     <div className="score-bar-wrap">
-                      <div className="score-bar" style={{width: `${naturalness}%`, background: '#3b82f6'}}></div>
+                      <div className="score-bar" style={{ width: `${naturalness}%`, background: '#3b82f6' }}></div>
                     </div>
-                    <div className="score-val" style={{color: '#3b82f6'}}>{naturalness}/100</div>
+                    <div className="score-val" style={{ color: '#3b82f6' }}>{naturalness}/100</div>
                   </div>
                   <div className="score-card">
                     <div className="score-label">AI Detection Risk</div>
