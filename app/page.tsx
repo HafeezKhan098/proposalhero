@@ -20,9 +20,11 @@ export default function Home() {
   if (!mounted) return null;
 
   const wordCount = proposal.trim() === '' ? 0 : proposal.trim().split(/\s+/).length;
+  const currentBrief = mode === 'humanize' ? humanBrief : brief;
+  const setCurrentBrief = mode === 'humanize' ? setHumanBrief : setBrief;
 
   async function generate() {
-    if (!brief.trim()) return;
+    if (!currentBrief.trim()) return;
     setLoading(true);
     setProposal('');
     setError('');
@@ -33,7 +35,7 @@ export default function Home() {
       const res = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ brief: mode === 'humanize' ? humanBrief : brief, niche, tone, mode })
+        body: JSON.stringify({ brief: currentBrief, niche, tone, mode })
       });
       const data = await res.json();
       if (data.error) {
@@ -68,7 +70,7 @@ export default function Home() {
     <div className="page">
       <nav className="nav">
         <div className="logo">
-          <img src="/logo1.png" alt="ProposalHero" style={{ height: '40px', width: 'auto' }} />
+          <img src="/logo1.png" alt="ProposalHero" style={{height: '40px', width: 'auto'}} />
         </div>
         <a href="https://proposalhero.lemonsqueezy.com/checkout/buy/f42e9931-e975-469b-822f-916086ddbafc?discount=0" target="_blank" className="upgrade-btn">Upgrade $9/mo</a>
       </nav>
@@ -85,19 +87,13 @@ export default function Home() {
           <div className="mode-tabs">
             <button
               className={`mode-tab ${mode === 'generate' ? 'active' : ''}`}
-              onClick={() => { setMode('humanize'); setProposal(''); setError(''); }}
-            >
-              ⚡ Generate Proposal
-            </button>
-            <button
-              className={`mode-tab ${mode === 'generate' ? 'active' : ''}`}
-              onClick={() => { setMode('generate'); setProposal(''); setBrief(''); setError(''); }}
+              onClick={() => { setMode('generate'); setProposal(''); setError(''); }}
             >
               ⚡ Generate Proposal
             </button>
             <button
               className={`mode-tab ${mode === 'humanize' ? 'active' : ''}`}
-              onClick={() => { setMode('humanize'); setProposal(''); setBrief(''); setError(''); }}
+              onClick={() => { setMode('humanize'); setProposal(''); setError(''); }}
             >
               ✦ Humanize Proposal
             </button>
@@ -138,20 +134,24 @@ export default function Home() {
               : 'Paste Client Job Description'}
           </label>
           <textarea
-            value={mode === 'humanize' ? humanBrief : brief}
-            onChange={e => mode === 'humanize' ? setHumanBrief(e.target.value) : setBrief(e.target.value)}
+            value={currentBrief}
+            onChange={e => setCurrentBrief(e.target.value)}
             placeholder={mode === 'humanize'
               ? 'Paste any AI-generated proposal here and we will make it sound human...'
               : 'Paste the Fiverr job here... even a few words works.'}
             rows={6}
           />
-          <div className="char-count">{mode === 'humanize' ? humanBrief.length : brief.length} characters</div>
+          <div className="char-count">{currentBrief.length} characters</div>
 
           {error && <div className="error-box">{error}</div>}
 
-          <button className="btn" onClick={generate} disabled={loading || !brief.trim()}>
+          <button
+            className="btn"
+            onClick={generate}
+            disabled={loading || !currentBrief.trim()}
+          >
             {loading
-              ? <><div className="spinner"></div> {mode === 'humanize' ? 'Humanizing...' : 'Writing your proposal...'}</>
+              ? <><div className="spinner"></div>{mode === 'humanize' ? 'Humanizing...' : 'Writing your proposal...'}</>
               : <>{mode === 'humanize' ? '✦ Humanize Now' : '⚡ Generate Winning Proposal'}</>}
           </button>
 
@@ -162,20 +162,24 @@ export default function Home() {
                   <div className="score-card">
                     <div className="score-label">Human Score</div>
                     <div className="score-bar-wrap">
-                      <div className="score-bar" style={{ width: `${humanScore}%`, background: '#22c55e' }}></div>
+                      <div className="score-bar" style={{width: `${humanScore}%`, background: '#22c55e'}}></div>
                     </div>
-                    <div className="score-val" style={{ color: '#22c55e' }}>{humanScore}/100</div>
+                    <div className="score-val" style={{color: '#22c55e'}}>{humanScore}/100</div>
                   </div>
                   <div className="score-card">
                     <div className="score-label">Naturalness</div>
                     <div className="score-bar-wrap">
-                      <div className="score-bar" style={{ width: `${naturalness}%`, background: '#3b82f6' }}></div>
+                      <div className="score-bar" style={{width: `${naturalness}%`, background: '#3b82f6'}}></div>
                     </div>
-                    <div className="score-val" style={{ color: '#3b82f6' }}>{naturalness}/100</div>
+                    <div className="score-val" style={{color: '#3b82f6'}}>{naturalness}/100</div>
                   </div>
                   <div className="score-card">
                     <div className="score-label">AI Detection Risk</div>
-                    <div className="risk-badge" style={{ background: getRiskColor(aiRisk) + '20', color: getRiskColor(aiRisk), border: `1px solid ${getRiskColor(aiRisk)}40` }}>
+                    <div className="risk-badge" style={{
+                      background: getRiskColor(aiRisk) + '20',
+                      color: getRiskColor(aiRisk),
+                      border: `1px solid ${getRiskColor(aiRisk)}40`
+                    }}>
                       {aiRisk}
                     </div>
                   </div>
@@ -183,10 +187,17 @@ export default function Home() {
               )}
 
               <div className="output-header">
-                <div className="output-label"><div className="dot"></div> {mode === 'humanize' ? 'Humanized Proposal' : 'Your Proposal'}</div>
+                <div className="output-label">
+                  <div className="dot"></div>
+                  {mode === 'humanize' ? 'Humanized Proposal' : 'Your Proposal'}
+                </div>
                 <div className="output-actions">
-                  <span className={`word-count ${wordCount > 150 ? 'over' : ''}`}>{wordCount} / 150 words</span>
-                  <button className="copy-btn" onClick={copy}>{copied ? '✓ Copied!' : '⧉ Copy'}</button>
+                  <span className={`word-count ${wordCount > 150 ? 'over' : ''}`}>
+                    {wordCount} / 150 words
+                  </span>
+                  <button className="copy-btn" onClick={copy}>
+                    {copied ? '✓ Copied!' : '⧉ Copy'}
+                  </button>
                 </div>
               </div>
               <div className="output-text">{proposal}</div>
