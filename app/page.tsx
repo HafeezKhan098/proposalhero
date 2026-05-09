@@ -32,21 +32,19 @@ export default function Home() {
       }
     }
   }, []);
+
   if (!mounted) return null;
 
   const wordCount = proposal.trim() === '' ? 0 : proposal.trim().split(/\s+/).length;
   const currentBrief = mode === 'humanize' ? humanBrief : brief;
   const setCurrentBrief = mode === 'humanize' ? setHumanBrief : setBrief;
-  <div className="usage-bar">
-    <span className="usage-text">
-      {usageCount >= FREE_LIMIT
-        ? '🔒 Daily limit reached — upgrade for unlimited'
-        : `✦ ${FREE_LIMIT - usageCount} free proposal${FREE_LIMIT - usageCount === 1 ? '' : 's'} remaining today`}
-    </span>
-  </div>
 
   async function generate() {
     if (!currentBrief.trim()) return;
+    if (usageCount >= FREE_LIMIT) {
+      setShowPaywall(true);
+      return;
+    }
     setLoading(true);
     setProposal('');
     setError('');
@@ -64,6 +62,10 @@ export default function Home() {
         setError('Something went wrong: ' + data.error);
       } else {
         setProposal(data.proposal);
+        const today = new Date().toDateString();
+        const newCount = usageCount + 1;
+        setUsageCount(newCount);
+        localStorage.setItem('ph_usage', JSON.stringify({ date: today, count: newCount }));
         if (data.mode === 'humanize') {
           setHumanScore(data.humanScore);
           setAiRisk(data.aiRisk);
@@ -104,6 +106,7 @@ export default function Home() {
       </div>
 
       <div className="card-wrap">
+
         {showPaywall && (
           <div className="paywall-overlay">
             <div className="paywall-card">
@@ -120,8 +123,8 @@ export default function Home() {
             </div>
           </div>
         )}
-        <div className="card">
 
+        <div className="card">
           <div className="mode-tabs">
             <button
               className={`mode-tab ${mode === 'generate' ? 'active' : ''}`}
@@ -182,6 +185,14 @@ export default function Home() {
           <div className="char-count">{currentBrief.length} characters</div>
 
           {error && <div className="error-box">{error}</div>}
+
+          <div className="usage-bar">
+            <span className="usage-text">
+              {usageCount >= FREE_LIMIT
+                ? '🔒 Daily limit reached — upgrade for unlimited'
+                : `✦ ${FREE_LIMIT - usageCount} free proposal${FREE_LIMIT - usageCount === 1 ? '' : 's'} remaining today`}
+            </span>
+          </div>
 
           <button
             className="btn"
