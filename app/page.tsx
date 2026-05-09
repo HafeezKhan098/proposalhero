@@ -51,7 +51,7 @@ export default function Home() {
         <div className="logo">
           <img src="/logo1.png" alt="ProposalHero" style={{ height: '40px', width: 'auto' }} />
         </div>
-        <span className="badge">Free Beta</span>
+        <a href="https://proposalhero.lemonsqueezy.com/checkout/buy/f42e9931-e975-469b-822f-916086ddbafc?discount=0" target="_blank" className="upgrade-btn">Upgrade $9/mo</a>
       </nav>
 
       <div className="hero">

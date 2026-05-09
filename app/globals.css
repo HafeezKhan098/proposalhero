@@ -207,6 +207,23 @@ textarea::placeholder {
   border: 1px solid rgba(248, 113, 113, 0.2);
 }
 
+.upgrade-btn {
+  font-size: 12px;
+  font-weight: 600;
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 99px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.upgrade-btn:hover {
+  background: #3b82f6;
+}
+
 .output-actions {
   display: flex;
   align-items: center;
