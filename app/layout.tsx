@@ -3,6 +3,9 @@ import { Analytics } from '@vercel/analytics/react';
 import './globals.css';
 
 export const metadata: Metadata = {
+  verification: {
+    google: 'm5kEgZMt2z3gIVtTw9ig-dUWufXtZ19SHSFzxha3xQg',
+  },
   title: 'ProposalHero — Free AI Fiverr Proposal Generator',
   description: 'Generate winning Fiverr and Upwork proposals in seconds with AI. Free proposal generator that sounds human, not robotic. No signup needed.',
   keywords: 'fiverr proposal generator, AI proposal writer, upwork proposal generator, fiverr proposal template, winning fiverr proposal, AI proposal tool free',
