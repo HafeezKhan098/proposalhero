@@ -248,9 +248,9 @@ export default function Home() {
       </div>
 
       {/* HOW IT WORKS */}
-      id="how"<div style={{ background: '#040d21' }} id="how"></div>
+      {/* HOW IT WORKS */}
       <div className="section-divider" />
-      <div style={{ background: '#040d21' }}>
+      <div style={{ background: '#040d21' }} id="how">
         <div className="section section-center">
           <div className="hero-tag" style={{ marginBottom: '16px' }}>Simple Process</div>
           <h2 className="section-title">How ProposalHero Works</h2>
@@ -335,9 +335,8 @@ export default function Home() {
       </div>
 
       {/* PRICING */}
-      id="pricing"<div style={{ background: '#040d21' }} id="pricing"></div>
       <div className="section-divider" />
-      <div style={{ background: '#040d21' }}>
+      <div style={{ background: '#040d21' }} id="pricing">
         <div className="section section-center">
           <div className="hero-tag" style={{ marginBottom: '16px' }}>Simple Pricing</div>
           <h2 className="section-title">Start Free. Upgrade When Ready.</h2>
@@ -375,9 +374,8 @@ export default function Home() {
       </div>
 
       {/* FAQ */}
-      id="faq"<div style={{ background: '#040d21' }} id="faq"></div>
       <div className="section-divider" />
-      <div style={{ background: '#040d21' }}>
+      <div style={{ background: '#040d21' }} id="faq">
         <div className="section section-center">
           <div className="hero-tag" style={{ marginBottom: '16px' }}>FAQ</div>
           <h2 className="section-title">Common Questions</h2>
