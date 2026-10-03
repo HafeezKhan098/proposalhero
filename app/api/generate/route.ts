@@ -1,6 +1,6 @@
 import Groq from 'groq-sdk';
 import { NextRequest, NextResponse } from 'next/server';
-import { createHmac, timingSafeEqual } from 'crypto';
+import { applyPro, cookieOptions, resolvePro, safeEqual, sign, type ProState } from '@/lib/license';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -9,6 +9,9 @@ export const maxDuration = 30;
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
+// llama-3.3-70b-versatile was retired by Groq on 2026-08-16. openai/gpt-oss-120b is a
+// production model with JSON mode. Override with the optional GROQ_MODEL env var
+// so a future model change never needs a code edit.
 const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 const FREE_LIMIT = 3; // generate / regenerate / humanize-tab requests per day
 const REFINE_LIMIT = 15; // one-tap improvements per day (they don't use a free proposal)
@@ -41,7 +44,7 @@ class ApiError extends Error {
 }
 
 // ---------------------------------------------------------------------------
-// Daily usage: signed, httpOnly cookie (no database, $0).
+// Daily usage: signed, httpOnly cookie (no database, $0). Pro users skip the limits.
 // The signing secret is USAGE_SECRET if set, otherwise it is derived from
 // GROQ_API_KEY, so no new environment variable is required.
 // ---------------------------------------------------------------------------
@@ -49,21 +52,13 @@ type Usage = { date: string; used: number; refines: number };
 
 const today = () => new Date().toISOString().slice(0, 10);
 
-function sign(payload: string): string {
-  const secret = process.env.USAGE_SECRET || process.env.GROQ_API_KEY || '';
-  return createHmac('sha256', secret).update(payload).digest('hex').slice(0, 32);
-}
-
 function readUsage(req: NextRequest): Usage {
   const fresh: Usage = { date: today(), used: 0, refines: 0 };
   const raw = req.cookies.get(COOKIE)?.value;
   if (!raw) return fresh;
   const [date, u, r, sig] = raw.split('.');
   if (!date || !u || !r || !sig) return fresh;
-  const expected = sign(`${date}.${u}.${r}`);
-  const a = Buffer.from(sig);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !timingSafeEqual(a, b)) return fresh;
+  if (!safeEqual(sig, sign(`${date}.${u}.${r}`))) return fresh;
   if (date !== fresh.date) return fresh;
   const used = parseInt(u, 10);
   const refines = parseInt(r, 10);
@@ -71,19 +66,14 @@ function readUsage(req: NextRequest): Usage {
   return { date, used, refines };
 }
 
-function withUsage(body: Record<string, unknown>, usage: Usage, status = 200) {
+function withUsage(body: Record<string, unknown>, usage: Usage, pro: ProState, status = 200) {
   const res = NextResponse.json(
-    { ...body, usage: { used: usage.used, limit: FREE_LIMIT } },
+    { ...body, usage: { used: usage.used, limit: FREE_LIMIT, pro: pro.pro } },
     { status }
   );
   const payload = `${usage.date}.${usage.used}.${usage.refines}`;
-  res.cookies.set(COOKIE, `${payload}.${sign(payload)}`, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: 60 * 60 * 48,
-  });
+  res.cookies.set(COOKIE, `${payload}.${sign(payload)}`, cookieOptions(60 * 60 * 48));
+  applyPro(res, pro);
   return res;
 }
 
@@ -170,7 +160,7 @@ function jobBlock(brief: string): string {
 type Parsed = { valid: boolean; proposal: string; why: string[] };
 
 function parseModelJson(raw: string): Parsed | null {
-  let text = raw.trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+  const text = raw.trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
   let obj: unknown = null;
   try {
     obj = JSON.parse(text);
@@ -191,25 +181,32 @@ function parseModelJson(raw: string): Parsed | null {
   proposal = proposal.replace(/^["“]([\s\S]*)["”]$/, '$1').trim();
   const why = Array.isArray(o.why)
     ? o.why
-      .filter((w): w is string => typeof w === 'string' && w.trim().length > 0)
-      .map((w) => w.trim().slice(0, 220))
-      .slice(0, 4)
+        .filter((w): w is string => typeof w === 'string' && w.trim().length > 0)
+        .map((w) => w.trim().slice(0, 220))
+        .slice(0, 4)
     : [];
   return { valid: o.valid !== false, proposal, why };
 }
 
 async function callModel(messages: Msg[], temperature: number): Promise<Parsed> {
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-  const r = await groq.chat.completions.create({
-    model: MODEL,
-    messages,
-    temperature,
-    max_tokens: 1000,
-    response_format: { type: 'json_object' },
-  });
-  const parsed = parseModelJson(r.choices[0]?.message?.content ?? '');
-  if (!parsed) throw new ApiError(502, "The AI's answer couldn't be read. Please try again. This didn't use up your daily count.");
-  return parsed;
+  // gpt-oss models "think" before answering and those tokens count toward the limit,
+  // so keep effort low and leave plenty of room for the answer itself.
+  const isReasoningModel = MODEL.startsWith('openai/gpt-oss');
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const r = await groq.chat.completions.create({
+      model: MODEL,
+      messages,
+      temperature,
+      max_completion_tokens: isReasoningModel ? 4000 : 1200,
+      ...(isReasoningModel ? { reasoning_effort: 'low' as const } : {}),
+      response_format: { type: 'json_object' },
+    });
+    const parsed = parseModelJson(r.choices[0]?.message?.content ?? '');
+    if (parsed) return parsed;
+    console.error('Model returned unreadable output, finish_reason:', r.choices[0]?.finish_reason);
+  }
+  throw new ApiError(502, "The AI's answer couldn't be read. Please try again. This didn't use up your daily count.");
 }
 
 // Safety net against invented credentials: first-person sentences that claim
@@ -274,7 +271,8 @@ async function produce(messages: Msg[], ctx: Context, temperature: number): Prom
 // ---------------------------------------------------------------------------
 export async function GET(req: NextRequest) {
   const usage = readUsage(req);
-  return withUsage({}, usage);
+  const pro = await resolvePro(req);
+  return withUsage({}, usage, pro);
 }
 
 // ---------------------------------------------------------------------------
@@ -282,6 +280,7 @@ export async function GET(req: NextRequest) {
 // ---------------------------------------------------------------------------
 export async function POST(req: NextRequest) {
   const usage = readUsage(req);
+  const pro = await resolvePro(req);
   try {
     if (!process.env.GROQ_API_KEY) {
       console.error('GROQ_API_KEY is not set');
@@ -318,7 +317,7 @@ export async function POST(req: NextRequest) {
     // ---------------- GENERATE ----------------
     if (action === 'generate') {
       if (!brief) throw new ApiError(400, "Paste the client's job description first, then try again.");
-      if (usage.used >= FREE_LIMIT) {
+      if (!pro.pro && usage.used >= FREE_LIMIT) {
         throw new ApiError(429, 'You have used your 3 free proposals today.', { limitReached: true });
       }
       const system = `You write freelance proposals.
@@ -352,8 +351,8 @@ ${contextBlock(ctx)}`;
         );
       }
       if (!out.proposal) throw new ApiError(502, 'The AI returned an empty proposal. Please try again. This didn\'t use up your daily count.');
-      usage.used += 1;
-      return withUsage({ proposal: out.proposal, why: out.why }, usage);
+      if (!pro.pro) usage.used += 1;
+      return withUsage({ proposal: out.proposal, why: out.why }, usage, pro);
     }
 
     // ---------------- REFINE (one-tap improvements) ----------------
@@ -362,7 +361,7 @@ ${contextBlock(ctx)}`;
       const proposal = str(body.proposal, MAX_PROPOSAL);
       if (!KINDS.includes(kind)) throw new ApiError(400, 'Unknown improvement type.');
       if (proposal.length < 20) throw new ApiError(400, 'There is no proposal to improve yet.');
-      if (usage.refines >= REFINE_LIMIT) {
+      if (!pro.pro && usage.refines >= REFINE_LIMIT) {
         throw new ApiError(429, "You've reached today's limit for quick improvements. Try again tomorrow, or upgrade for unlimited use.", {
           limitReached: true,
           code: 'refine_limit',
@@ -397,15 +396,15 @@ ${proposal.replace(/"""/g, '"')}
         0.5
       );
       if (!out.proposal) throw new ApiError(502, 'The AI returned an empty result. Please try again. This didn\'t use up your daily count.');
-      usage.refines += 1;
-      return withUsage({ proposal: out.proposal, why: out.why }, usage);
+      if (!pro.pro) usage.refines += 1;
+      return withUsage({ proposal: out.proposal, why: out.why }, usage, pro);
     }
 
     // ---------------- HUMANIZE TAB (paste any proposal) ----------------
     if (action === 'humanize') {
       const proposal = str(body.proposal, MAX_PROPOSAL);
       if (proposal.length < 20) throw new ApiError(400, 'Paste the proposal you want to humanize first.');
-      if (usage.used >= FREE_LIMIT) {
+      if (!pro.pro && usage.used >= FREE_LIMIT) {
         throw new ApiError(429, 'You have used your 3 free proposals today.', { limitReached: true });
       }
       const system = `You are an editor who makes writing sound like a real person wrote it.
@@ -424,14 +423,14 @@ Return ONLY valid JSON: {"proposal": "<rewritten text>"}`;
         0.6
       );
       if (!out.proposal) throw new ApiError(502, 'The AI returned an empty result. Please try again. This didn\'t use up your daily count.');
-      usage.used += 1;
-      return withUsage({ proposal: out.proposal }, usage);
+      if (!pro.pro) usage.used += 1;
+      return withUsage({ proposal: out.proposal }, usage, pro);
     }
 
     throw new ApiError(400, 'Unknown request. Please refresh the page and try again.');
   } catch (err: unknown) {
     if (err instanceof ApiError) {
-      return withUsage({ error: err.message, ...err.extra }, usage, err.status);
+      return withUsage({ error: err.message, ...err.extra }, usage, pro, err.status);
     }
     console.error('generate route error:', err);
     const status = (err as { status?: number } | null)?.status;
@@ -440,10 +439,14 @@ Return ONLY valid JSON: {"proposal": "<rewritten text>"}`;
     if (status === 429) {
       message = "The AI service is busy right now. Wait a few seconds and try again. This didn't use up your daily count.";
       code = 503;
+    } else if (status === 404) {
+      console.error('Groq model not found. Set GROQ_MODEL to a current model id. Current:', MODEL);
+      message = "ProposalHero's AI model is temporarily unavailable. The site owner has been notified in the server logs. Please try again later.";
+      code = 503;
     } else if (status === 401 || status === 403) {
       message = 'ProposalHero could not reach its AI service (server configuration problem). Please try again later.';
       code = 500;
     }
-    return withUsage({ error: message }, usage, code);
+    return withUsage({ error: message }, usage, pro, code);
   }
 }
