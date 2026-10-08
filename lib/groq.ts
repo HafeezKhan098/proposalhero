@@ -1,0 +1,5 @@
+import Groq from 'groq-sdk';
+export const model=process.env.GROQ_MODEL||'openai/gpt-oss-120b';
+export const groq=new Groq({apiKey:process.env.GROQ_API_KEY});
+export async function structured<T>(name:string,schema:Record<string,unknown>,messages:{role:'system'|'user';content:string}[],max_completion_tokens=2200){const r=await groq.chat.completions.create({model,messages,response_format:{type:'json_schema',json_schema:{name,strict:true,schema}},reasoning_effort:'low',max_completion_tokens});const content=r.choices[0]?.message?.content;if(!content)throw new Error('The AI returned an empty response.');return JSON.parse(content) as T}
+export function assertUsefulInput(input:string,min=12){const text=input.trim();if(text.length<min)throw new Error('Please provide a little more detail so the AI can create something useful.');const words=text.toLowerCase().split(/\s+/).filter(Boolean);const junk=['hello','hi','hey','website','proposal','make me a proposal','random','test','asdf','help'];if(words.length<=3&&words.some(w=>junk.includes(w)))throw new Error('That input is too vague. Add the client brief, project details, or task you want help with.');return text}
