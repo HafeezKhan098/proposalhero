@@ -47,7 +47,7 @@ export default function Page() {
                 <section className="contact-grid">
                     <div>
                         <span>ACCOUNT</span>
-                        <h2>Login, signup or saved work</h2>
+                        <h2>Login, signup or account help</h2>
                         <p>
                             Include the email associated with your ProposalHero account and a
                             short description of the problem.

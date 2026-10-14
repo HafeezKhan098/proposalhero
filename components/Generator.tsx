@@ -1,5 +1,6 @@
 'use client';
 import { useState, type ReactNode } from 'react';
+import Link from 'next/link';
 import { ScanSearch, BarChart3, Check, Copy, FileText, Loader2, Sparkles, Wand2 } from 'lucide-react';
 
 type Mode = 'proposal' | 'prompt';
@@ -8,7 +9,27 @@ const promptCategories = ['Web Design', 'Coding', 'UI/UX', 'App Development', 'M
 const tools = ['ChatGPT', 'Claude', 'Gemini', 'Cursor', 'Lovable', 'v0', 'Bolt'];
 const tones = ['Friendly', 'Professional', 'Confident', 'Expert', 'Casual'];
 
-function CopyButton({ value }: { value: string }) { const [done, setDone] = useState(false); return <button className="icon-btn" onClick={async () => { await navigator.clipboard?.writeText(value); setDone(true); setTimeout(() => setDone(false), 1500) }}><Copy size={15} />{done ? 'Copied' : 'Copy proposal'}</button> }
+function CopyButton({ value }: { value: string }) {
+  const [state, setState] = useState<'idle' | 'done' | 'failed'>('idle');
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setState('done');
+    } catch {
+      // Fallback for insecure contexts / denied permission.
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = value; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        setState(ok ? 'done' : 'failed');
+      } catch { setState('failed'); }
+    }
+    setTimeout(() => setState('idle'), 2000);
+  }
+  return <button type="button" className="icon-btn" onClick={copy} aria-live="polite"><Copy size={15} />{state === 'done' ? 'Copied' : state === 'failed' ? 'Press Ctrl+C to copy' : 'Copy'}</button>
+}
 
 function ReadyProposal({ data }: { data: any }) {
   return <article className="ready-proposal">
@@ -38,12 +59,12 @@ function ResultPanel({ data, onImprove, onAnalyze, onScore, working, mode }: { d
 }
 
 export default function Generator({ mode = 'proposal' }: { mode?: Mode }) {
-  const [brief, setBrief] = useState(''); const [platform, setPlatform] = useState('Upwork'); const [category, setCategory] = useState('Web Development'); const [tone, setTone] = useState('Professional'); const [skills, setSkills] = useState(''); const [experience, setExperience] = useState(''); const [portfolio, setPortfolio] = useState(''); const [mention, setMention] = useState(''); const [tool, setTool] = useState('ChatGPT'); const [promptCategory, setPromptCategory] = useState('Web Design'); const [style, setStyle] = useState('Structured'); const [loading, setLoading] = useState(false); const [working, setWorking] = useState(''); const [error, setError] = useState(''); const [data, setData] = useState<any>(null);
-  async function run() { setLoading(true); setError(''); setData(null); try { const endpoint = mode === 'proposal' ? '/api/generate-proposal' : '/api/generate-prompt'; const body = mode === 'proposal' ? { brief, platform, category, tone, skills, experience, portfolio, mention } : { task: brief, category: promptCategory, tool, style }; const r = await fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json(); if (!r.ok) throw new Error(j.error || 'Something went wrong.'); setData(j.data) } catch (e) { setError(e instanceof Error ? e.message : 'Something went wrong.') } finally { setLoading(false) } }
-  async function toolCall(endpoint: string, body: any, key: string) { setWorking(key); setError(''); try { const r = await fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json(); if (!r.ok) throw new Error(j.error || 'Unable to complete that action.'); if (key === 'improve' && j.data?.improved) setData({ ...data, improved: j.data.improved, changes: j.data.changes, qualityScore: j.data.score }); else if (key === 'analyze') setData({ ...data, analysis: j.data }); else if (key === 'score') setData({ ...data, review: j.data }); } catch (e) { setError(e instanceof Error ? e.message : 'Unable to complete that action.') } finally { setWorking('') } }
+  const [brief, setBrief] = useState(''); const [platform, setPlatform] = useState('Upwork'); const [category, setCategory] = useState('Web Development'); const [tone, setTone] = useState('Professional'); const [skills, setSkills] = useState(''); const [experience, setExperience] = useState(''); const [portfolio, setPortfolio] = useState(''); const [mention, setMention] = useState(''); const [tool, setTool] = useState('ChatGPT'); const [promptCategory, setPromptCategory] = useState('Web Design'); const [style, setStyle] = useState('Structured'); const [loading, setLoading] = useState(false); const [working, setWorking] = useState(''); const [error, setError] = useState(''); const [limitHit, setLimitHit] = useState(false); const [usage, setUsage] = useState<{ remaining: number; limit: number; guest: boolean; pro: boolean } | null>(null); const [data, setData] = useState<any>(null);
+  async function run() { if (loading) return; setLoading(true); setError(''); setLimitHit(false); setData(null); try { const endpoint = mode === 'proposal' ? '/api/generate-proposal' : '/api/generate-prompt'; const body = mode === 'proposal' ? { brief, platform, category, tone, skills, experience, portfolio, mention } : { task: brief, category: promptCategory, tool, style }; const r = await fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({})); setLimitHit(j.code === 'limit_reached'); if (j.usage) setUsage(j.usage); if (!r.ok) throw new Error(j.error || 'Something went wrong. Please try again.'); setData(j.data) } catch (e) { setError(e instanceof Error ? e.message : 'Something went wrong.') } finally { setLoading(false) } }
+  async function toolCall(endpoint: string, body: any, key: string) { setWorking(key); setError(''); setLimitHit(false); try { const r = await fetch(endpoint, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); const j = await r.json().catch(() => ({})); setLimitHit(j.code === 'limit_reached'); if (!r.ok) throw new Error(j.error || 'Unable to complete that action.'); if (key === 'improve' && j.data?.improved) setData({ ...data, improved: j.data.improved, changes: j.data.changes, qualityScore: j.data.score }); else if (key === 'analyze') setData({ ...data, analysis: j.data }); else if (key === 'score') setData({ ...data, review: j.data }); } catch (e) { setError(e instanceof Error ? e.message : 'Unable to complete that action.') } finally { setWorking('') } }
   const proposalText = mode === 'proposal' ? (data?.proposal || '') : '';
   return <div className={`generator-shell ${mode}`}>
-    <div className="generator-topbar"><div className="generator-product"><div className="product-icon">{mode === 'proposal' ? <FileText size={18} /> : <Sparkles size={18} />}</div><div><strong>{mode === 'proposal' ? 'Proposal Generator' : 'Prompt Generator'}</strong><span>{mode === 'proposal' ? 'Job post → personalized proposal → humanize → send' : 'Task → structured prompt → copy → build'}</span></div></div><div className="generator-usage"><span className="usage-label">FREE</span><span>3 free tries · no signup</span></div></div>
+    <div className="generator-topbar"><div className="generator-product"><div className="product-icon">{mode === 'proposal' ? <FileText size={18} /> : <Sparkles size={18} />}</div><div><strong>{mode === 'proposal' ? 'Proposal Generator' : 'Prompt Generator'}</strong><span>{mode === 'proposal' ? 'Job post → personalized proposal → humanize → send' : 'Task → structured prompt → copy → build'}</span></div></div><div className="generator-usage" aria-live="polite"><span className="usage-label">{usage ? (usage.pro ? 'PRO' : usage.guest ? 'GUEST' : 'FREE') : 'FREE'}</span><span>{usage ? `${usage.remaining} of ${usage.limit} left ${usage.guest ? 'as a guest' : 'this month'}` : 'Free to try · no signup needed'}</span></div></div>
     <div className="generator-grid">
       <aside className="generator-form">
         <div className="form-heading"><span>01</span><div><h2>{mode === 'proposal' ? 'Build your proposal' : 'Build your prompt'}</h2><p>{mode === 'proposal' ? 'Paste the client job and add only the details that matter.' : 'Describe the outcome and choose how you want the prompt structured.'}</p></div></div>
@@ -51,17 +72,17 @@ export default function Generator({ mode = 'proposal' }: { mode?: Mode }) {
           <div className="inline-fields"><Field label="Platform"><select value={platform} onChange={e => setPlatform(e.target.value)}><option>Fiverr</option><option>Upwork</option><option>Direct client</option></select></Field><Field label="Your category"><select value={category} onChange={e => setCategory(e.target.value)}>{categories.map(x => <option key={x}>{x}</option>)}</select></Field></div>
           <div className="tone-row"><span className="field-label">Tone</span><div className="segmented">{tones.map(x => <button type="button" key={x} className={tone === x ? 'active' : ''} onClick={() => setTone(x)}>{x}</button>)}</div></div>
           <Field label="Client's job description"><textarea className="brief-area" value={brief} onChange={e => setBrief(e.target.value)} maxLength={8000} placeholder="Paste the client's job description or project brief here…" /><div className="char-count">{brief.length.toLocaleString()} / 8,000</div></Field>
-          <Field label="Improve your proposal (optional)"><input value={mention} onChange={e => setMention(e.target.value)} placeholder="Anything specific to mention, ask or emphasize…" /></Field>
-          <div className="optional-grid"><Field label="Your relevant skills"><input value={skills} onChange={e => setSkills(e.target.value)} placeholder="e.g. Figma, React, SEO" /></Field><Field label="Portfolio / project link"><input value={portfolio} onChange={e => setPortfolio(e.target.value)} placeholder="https://" /></Field></div>
-          <Field label="Your relevant experience"><textarea value={experience} onChange={e => setExperience(e.target.value)} placeholder="A short real example you want included…" /></Field>
+          <Field label="Improve your proposal (optional)"><input value={mention} maxLength={300} onChange={e => setMention(e.target.value)} placeholder="Anything specific to mention, ask or emphasize…" /></Field>
+          <div className="optional-grid"><Field label="Your relevant skills"><input value={skills} maxLength={300} onChange={e => setSkills(e.target.value)} placeholder="e.g. Figma, React, SEO" /></Field><Field label="Portfolio / project link"><input value={portfolio} maxLength={300} onChange={e => setPortfolio(e.target.value)} placeholder="https://" /></Field></div>
+          <Field label="Your relevant experience"><textarea value={experience} maxLength={1500} onChange={e => setExperience(e.target.value)} placeholder="A short real example you want included…" /></Field>
         </> : <>
-          <Field label="What do you want AI to do?"><textarea className="brief-area" value={brief} onChange={e => setBrief(e.target.value)} placeholder="Example: Create a mobile-first website for a local coffee shop with a menu, location section and online ordering CTA…" /></Field>
+          <Field label="What do you want AI to do?"><textarea className="brief-area" value={brief} onChange={e => setBrief(e.target.value)} maxLength={4000} placeholder="Example: Create a mobile-first website for a local coffee shop with a menu, location section and online ordering CTA…" /></Field>
           <div className="inline-fields"><Field label="Prompt category"><select value={promptCategory} onChange={e => setPromptCategory(e.target.value)}>{promptCategories.map(x => <option key={x}>{x}</option>)}</select></Field><Field label="AI tool"><select value={tool} onChange={e => setTool(e.target.value)}>{tools.map(x => <option key={x}>{x}</option>)}</select></Field></div>
           <div className="tone-row"><span className="field-label">Prompt style</span><div className="segmented">{['Structured', 'Expert', 'Creative', 'Concise'].map(x => <button type="button" key={x} className={style === x ? 'active' : ''} onClick={() => setStyle(x)}>{x}</button>)}</div></div>
           <div className="prompt-hint"><strong>Built for the tools you already use.</strong><span>Clear objective, context, constraints, quality criteria and expected output.</span></div>
         </>}
-        {error && <div className="error-box">{error}</div>}
-        <button className="generate-btn" onClick={run} disabled={loading || brief.trim().length < (mode === 'proposal' ? 20 : 12)}>{loading ? <><Loader2 className="spin" size={17} /> Generating…</> : <><Sparkles size={17} /> {mode === 'proposal' ? 'Generate proposal' : 'Generate prompt'} <span>⌘↵</span></>}</button>
+        {error && <div className="error-box" role="alert">{error}{limitHit && <div style={{ marginTop: 10, display: 'flex', gap: 14, flexWrap: 'wrap' }}>{usage?.guest !== false && <Link href="/signup"><strong>Create a free account</strong></Link>}{usage?.guest !== false && <Link href="/login">Sign in</Link>}{usage?.guest === false && <Link href="/pricing"><strong>See Pro</strong></Link>}</div>}<div style={{ marginTop: 6, fontSize: 13, opacity: .8 }}>{limitHit ? 'Your text is still here.' : 'Your text has been kept so you can try again.'}</div></div>}
+        <button className="generate-btn" onClick={run} disabled={loading || brief.trim().length < (mode === 'proposal' ? 20 : 12)}>{loading ? <><Loader2 className="spin" size={17} /> Generating…</> : <><Sparkles size={17} /> {mode === 'proposal' ? 'Generate proposal' : 'Generate prompt'}</>}</button>
         <div className="form-foot"><Check size={14} /> No invented credentials. <span>•</span> Always review before sending.</div>
       </aside>
       <main className="generator-output">

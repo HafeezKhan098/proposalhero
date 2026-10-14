@@ -2,10 +2,10 @@ import type { Metadata } from 'next';
 import { Analytics } from '@vercel/analytics/next';
 import './globals.css';
 
+const SITE = (process.env.NEXT_PUBLIC_SITE_URL || 'https://proposalhero.vercel.app').replace(/\/$/, '');
+
 export const metadata: Metadata = {
-    metadataBase: new URL(
-        process.env.NEXT_PUBLIC_SITE_URL || 'https://proposalhero.vercel.app'
-    ),
+    metadataBase: new URL(SITE),
 
     title: {
         default: 'ProposalHero — AI Proposal Generator for Freelancers',
@@ -51,13 +51,13 @@ export const metadata: Metadata = {
         title: 'ProposalHero — AI Proposal Generator for Freelancers',
         description:
             'Write client-specific freelance proposals, improve them with AI and build better prompts for the work you win.',
-        url: 'https://proposalhero.vercel.app',
+        url: SITE,
         siteName: 'ProposalHero',
         images: [
             {
                 url: '/logo.png',
-                width: 512,
-                height: 512,
+                width: 1254,
+                height: 1254,
                 alt: 'ProposalHero — AI tools for freelancers',
             },
         ],
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     },
 
     twitter: {
-        card: 'summary_large_image',
+        card: 'summary',
         title: 'ProposalHero — AI Proposal Generator for Freelancers',
         description:
             'Write better freelance proposals and build better AI prompts.',
@@ -97,8 +97,8 @@ export default function RootLayout({
                             '@context': 'https://schema.org',
                             '@type': 'Organization',
                             name: 'ProposalHero',
-                            url: 'https://proposalhero.vercel.app',
-                            logo: 'https://proposalhero.vercel.app/logo.png',
+                            url: SITE,
+                            logo: `${SITE}/logo.png`,
                         }),
                     }}
                 />
