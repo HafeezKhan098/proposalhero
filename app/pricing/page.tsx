@@ -41,6 +41,7 @@ const faqs: [string, string][] = [
   ['What happens if a generation fails?', 'You are not charged for it. If the AI service fails or returns an unusable result, the use is returned to your allowance.'],
   ['Can I cancel Pro?', 'Yes. You can cancel at any time from Manage subscription. If you cancel, Pro access continues until the end of the period you have already paid for.'],
   ['What if I downgrade and have more than 3 saved proposals?', 'Nothing is deleted. You keep everything you saved, but you will need to delete some before saving new ones on the Basic plan.'],
+  ['Do you offer refunds?', 'Payments are non-refundable, and there are no partial refunds for unused time. You can cancel at any time to stop future renewals, and you keep Pro until the end of the period you paid for. If you were charged by mistake, contact us. See the Terms for details.'],
   ['Who processes payments?', 'Payments are processed by Lemon Squeezy. ProposalHero never sees or stores your card details.'],
 ];
 
@@ -73,7 +74,7 @@ export default function Page() {
             {proEnabled ? (
               <>
                 <BillingButton endpoint="/api/billing/checkout" label="Upgrade to Pro" className="plan-btn dark" />
-                <small className="checkout-note">Secure checkout by Lemon Squeezy. Cancel any time.</small>
+                <small className="checkout-note">Secure checkout by Lemon Squeezy. Cancel any time. Payments are non-refundable.</small>
               </>
             ) : (
               <>
