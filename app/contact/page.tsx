@@ -33,9 +33,7 @@ export default function Page() {
 
                         <a
                             className="contact-email"
-                            href="https://mail.google.com/mail/?view=cm&fs=1&to=proposalhero@gmail.com"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            href="mailto:proposalhero@gmail.com"
                         >
                             <Mail size={18} />
                             proposalhero@gmail.com

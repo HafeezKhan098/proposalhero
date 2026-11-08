@@ -32,3 +32,6 @@ export const PRO_LIMITS: Record<UsageKind, number> = { proposal: 300, prompt: 30
 
 // Hard server-side input caps (characters).
 export const INPUT_LIMITS = { brief: 8000, task: 4000, proposal: 6000, short: 300, medium: 1500 } as const;
+
+// Saved proposals library size. Basic users must delete one to save another; nothing is auto-deleted.
+export const SAVED_LIMITS = { basic: 3, pro: 500 } as const;

@@ -6,19 +6,19 @@ import Generator from '@/components/Generator';
 import { ArrowRight, Check, ChevronDown, ShieldCheck, Sparkles, Target } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'AI Proposal Generator for Freelancers | ProposalHero',
+  title: { absolute: 'AI Proposal Generator for Freelancers | ProposalHero' },
   description: 'AI proposal generator for freelancers. Create personalized Upwork and Fiverr proposals, humanize AI-written proposals, analyze client briefs and score your pitch before you send it.',
   alternates: { canonical: '/' },
 };
 
 const faqs = [
-  ['Is ProposalHero free?', 'Yes. Guests can try the Proposal Generator and Prompt Generator before creating an account. Free accounts get a monthly allowance and a usage dashboard; Pro is being prepared for heavier use.'],
+  ['Is ProposalHero free?', 'Yes. Guests can try the Proposal Generator and Prompt Generator before creating an account. Free accounts get a monthly allowance, a usage dashboard and room to save three proposals. Pro raises the limits and the library to 500 proposals.'],
   ['Does it work for Upwork and Fiverr?', 'Yes. Choose Upwork, Fiverr or direct client when creating a proposal. The generator uses the job description and the details you provide rather than a generic template.'],
   ['Can ProposalHero humanize my proposal?', 'Yes. After generating a proposal, use Humanize & improve to make the draft more natural, conversational and client-specific while preserving the substance.'],
   ['Will it invent my experience?', 'The proposal engine is instructed not to invent credentials, portfolio results, prices, dates or client facts. Always review the final proposal before sending it.'],
   ['What is the Prompt Generator for?', 'It turns a rough task into a structured prompt for tools such as ChatGPT, Claude, Gemini, Cursor, Lovable, v0 and Bolt.'],
   ['How is this different from ChatGPT?', 'ProposalHero packages the freelance workflow around the job: proposal writing, humanizing, analysis, scoring and reusable AI prompts. You spend less time designing prompts and more time reviewing useful output.'],
-  ['Can I cancel Pro?', 'Yes. Pro checkout and subscription management are handled by Lemon Squeezy. You can cancel according to the subscription terms shown at checkout.'],
+  ['Can I cancel Pro?', 'Yes. You can cancel at any time from Manage subscription. Pro access continues until the end of the period you have already paid for. Payments are handled by Lemon Squeezy.'],
   ['Do I need to enter my portfolio or experience?', 'No. Those fields are optional. If you leave them blank, ProposalHero avoids making claims about your background.'],
 ] as const;
 
@@ -116,7 +116,7 @@ export default function Home() {
 
       <section className="pricing-preview"><div className="content-narrow">
         <div className="section-intro"><div><div className="eyebrow">Simple pricing</div><h2>Start free. Upgrade when it earns its place.</h2></div><Link href="/pricing" className="text-link">See full pricing <ArrowRight size={15} /></Link></div>
-        <div className="pricing-mini"><div><span>FREE</span><strong>$0</strong><p>Try proposals and prompts before you commit.</p><ul><li>3 guest proposals</li><li>3 guest prompts</li><li>Free account: 3 proposals and 3 prompts / month</li></ul></div><div className="pricing-mini-pro"><span>PRO</span><strong>$9<span>/month</span></strong><p>For freelancers who use the workflow regularly.</p><ul><li>Generous proposal & prompt usage</li><li>More refinement, analysis & scoring</li><li>Full workspace and history</li></ul></div></div>
+        <div className="pricing-mini"><div><span>FREE</span><strong>$0</strong><p>Try proposals and prompts before you commit.</p><ul><li>3 guest proposals</li><li>3 guest prompts</li><li>Free account: 3 proposals and 3 prompts a month</li><li>Save up to 3 proposals</li></ul></div><div className="pricing-mini-pro"><span>PRO</span><strong>$9<span>/month</span></strong><p>For freelancers who use the workflow regularly.</p><ul><li>300 proposals and 300 prompts a month</li><li>More Humanize, analysis and scoring</li><li>Save up to 500 proposals, with a Pro badge</li></ul></div></div>
       </div></section>
 
       <section className="faq-section"><div className="content-narrow"><div className="eyebrow">FAQ</div><h2>Questions freelancers usually ask.</h2><div className="faq-list">{faqs.map(([q, a]) => <details key={q}><summary>{q}<ChevronDown size={17} /></summary><p>{a}</p></details>)}</div></div></section>

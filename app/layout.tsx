@@ -37,14 +37,10 @@ export const metadata: Metadata = {
         'AI freelancer tools',
     ],
 
-    alternates: {
-        canonical: '/',
-    },
-
     icons: {
-        icon: '/logo.png',
-        shortcut: '/logo.png',
-        apple: '/logo.png',
+        icon: '/icon-192.png',
+        shortcut: '/icon-192.png',
+        apple: '/icon-192.png',
     },
 
     openGraph: {
@@ -55,9 +51,9 @@ export const metadata: Metadata = {
         siteName: 'ProposalHero',
         images: [
             {
-                url: '/logo.png',
-                width: 1254,
-                height: 1254,
+                url: '/og.png',
+                width: 1200,
+                height: 630,
                 alt: 'ProposalHero — AI tools for freelancers',
             },
         ],
@@ -65,11 +61,11 @@ export const metadata: Metadata = {
     },
 
     twitter: {
-        card: 'summary',
+        card: 'summary_large_image',
         title: 'ProposalHero — AI Proposal Generator for Freelancers',
         description:
             'Write better freelance proposals and build better AI prompts.',
-        images: ['/logo.png'],
+        images: ['/og.png'],
     },
 
     robots: {
@@ -99,6 +95,17 @@ export default function RootLayout({
                             name: 'ProposalHero',
                             url: SITE,
                             logo: `${SITE}/logo.png`,
+                        }),
+                    }}
+                />
+                <script
+                    type="application/ld+json"
+                    dangerouslySetInnerHTML={{
+                        __html: JSON.stringify({
+                            '@context': 'https://schema.org',
+                            '@type': 'WebSite',
+                            name: 'ProposalHero',
+                            url: SITE,
                         }),
                     }}
                 />
