@@ -164,7 +164,7 @@ export default function Header() {
           <Link href="/pricing">Pricing</Link>
           <Link href="/resources">Guides</Link>
           <Link href="/how-it-works">How it works</Link>
-          <div className="mobile-nav-actions">
+          <div className={`mobile-nav-actions ${user ? 'mobile-nav-account' : ''}`}>
             {authLoading ? null : user ? (
               <>
                 <div className="mobile-account">

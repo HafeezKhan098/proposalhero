@@ -3315,3 +3315,11 @@ a.tool-action { display: inline-flex; align-items: center; gap: 7px; text-decora
 @media (max-width: 760px) {
     input, select, textarea { font-size: 16px }
 }
+
+
+/* Mobile menu: signed-in account links as a vertical list (the base actions row is for two buttons) */
+.mobile-nav { max-width: 100%; overflow-x: hidden }
+.mobile-nav-actions.mobile-nav-account { flex-direction: column; align-items: stretch; gap: 0; margin-top: 18px; border-top: 1px solid rgba(255, 255, 255, .14); padding-top: 6px }
+.mobile-nav-account .mobile-account { padding: 12px 4px; flex-wrap: wrap }
+.mobile-nav-account > a, .mobile-nav-account > button { display: flex; align-items: center; justify-content: flex-start; gap: 10px; width: 100%; padding: 14px 4px; border: 0; border-bottom: 1px solid rgba(255, 255, 255, .12); background: transparent; color: #e8eef2; font-size: 16px; text-align: left; text-decoration: none; min-height: 48px }
+.mobile-nav-account > button:last-child { border-bottom: 0 }
